@@ -61,6 +61,16 @@
         .scale-up {
             animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        
+        /* Esconder as setas do input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
     </style>
     
     <!-- Meta Pixel Code -->
@@ -120,17 +130,16 @@
                 <div class="flex flex-col gap-3">
                     
                     <!-- Basic Card -->
-                    <label class="relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200" id="card-basic">
+                    <label class="relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-border bg-white" id="card-basic">
                         <input type="radio" name="package" value="basic" class="peer hidden" onchange="updateSelection()">
                         <div class="flex-1">
                             <h4 class="font-bold text-base">Pacote Básico</h4>
                             <p class="text-xs text-of-gray mt-0.5">Acesso inicial ao conteúdo restrito.</p>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right pr-6">
                             <span class="font-bold text-lg">$14</span>
                         </div>
-                        <!-- Círculo de seleção -->
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-of-border flex items-center justify-center peer-checked:border-of-blue peer-checked:bg-of-blue transition-all" id="check-basic">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-of-border flex items-center justify-center transition-all" id="check-basic">
                             <i class="fa-solid fa-check text-white text-[10px] opacity-0" id="icon-basic"></i>
                         </div>
                     </label>
@@ -138,7 +147,6 @@
                     <!-- Premium Card -->
                     <label class="relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-blue bg-blue-50/50" id="card-premium">
                         <input type="radio" name="package" value="premium" class="peer hidden" checked onchange="updateSelection()">
-                        <!-- Badge Popular -->
                         <div class="absolute -top-2.5 left-4 bg-of-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                             Mais Popular
                         </div>
@@ -149,9 +157,38 @@
                         <div class="text-right pr-6">
                             <span class="font-bold text-lg text-of-blue">$29</span>
                         </div>
-                        <!-- Círculo de seleção -->
                         <div class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-of-blue bg-of-blue flex items-center justify-center transition-all" id="check-premium">
                             <i class="fa-solid fa-check text-white text-[10px] opacity-100" id="icon-premium"></i>
+                        </div>
+                    </label>
+
+                    <!-- Custom / Mimo Card -->
+                    <label class="relative flex flex-col p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-border bg-white" id="card-custom">
+                        <div class="flex items-center w-full">
+                            <input type="radio" name="package" value="custom" class="peer hidden" onchange="updateSelection()">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-base">Enviar um Mimo ❤️</h4>
+                                <p class="text-xs text-of-gray mt-0.5">Escolha o valor que deseja enviar para ajudar.</p>
+                            </div>
+                            <div class="absolute right-4 top-4 w-5 h-5 rounded-full border-2 border-of-border flex items-center justify-center transition-all" id="check-custom">
+                                <i class="fa-solid fa-check text-white text-[10px] opacity-0" id="icon-custom"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Inputs Expandidos (Visíveis apenas quando selecionado) -->
+                        <div id="custom-inputs" class="hidden mt-4 pt-4 border-t border-blue-100 flex gap-2 items-center">
+                            
+                            <div class="flex-1 relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-of-gray font-bold text-sm">$</span>
+                                <input type="number" id="input-usd" placeholder="0.00" min="1" step="0.5" class="w-full pl-7 pr-2 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-of-text outline-none focus:border-of-blue focus:ring-1 focus:ring-of-blue transition-all" oninput="handleCustomInput('usd')">
+                            </div>
+                            
+                            <div class="text-of-gray"><i class="fa-solid fa-right-left text-xs"></i></div>
+                            
+                            <div class="flex-1 relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-of-gray font-bold text-sm">R$</span>
+                                <input type="number" id="input-brl" placeholder="0.00" min="6" step="1" class="w-full pl-8 pr-2 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-of-text outline-none focus:border-of-blue focus:ring-1 focus:ring-of-blue transition-all" oninput="handleCustomInput('brl')">
+                            </div>
                         </div>
                     </label>
                 </div>
@@ -253,23 +290,29 @@
         const PRICES = { basic: 14, premium: 29 };
         const PIX_RATE = 6.00;
         
-        // Substitua pelos links reais do Stripe
+        // Substitua pelos links reais do Stripe.
+        // NOTA IMPORTANTE PARA O "MIMO": No Stripe, você precisa criar um "Payment Link"
+        // configurado com a opção "Deixar os clientes escolherem o que pagar".
         const STRIPE_LINKS = {
             basic: 'https://buy.stripe.com/SEU_LINK_BASICO_AQUI',
-            premium: 'https://buy.stripe.com/SEU_LINK_PREMIUM_AQUI'
+            premium: 'https://buy.stripe.com/SEU_LINK_PREMIUM_AQUI',
+            custom: 'https://buy.stripe.com/SEU_LINK_MIMO_AQUI' 
         };
+
+        const PACKAGES = ['basic', 'premium', 'custom'];
 
         let currentPkg = 'premium';
         let currentPay = 'card';
         let pixPollingInterval = null;
         let currentTransactionId = null;
-        let globalClickId = null; // Armazena o ID de tracking gerado silenciosamente na API
+        let globalClickId = null;
+        let customPriceUSD = 10; // Valor padrão do mimo se ele clicar e não digitar nada
 
-        // Helpers de Tracking (Deteção de Bots e Leitura de Cookies)
+        // Helpers de Tracking
         const isBot = () => /bot|facebook|crawler|spider|preview/i.test(navigator.userAgent);
         const getCookie = (name) => document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))?.[2] || null;
 
-        // Registra o clique na API (em background) e guarda o ID para usar no PIX
+        // Registra o clique na API
         async function registerClickAPI() {
             try {
                 const params = new URLSearchParams(window.location.search);
@@ -295,22 +338,19 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === "success") {
-                        globalClickId = data.click_id; // Guarda o ID verdadeiro
+                        globalClickId = data.click_id;
                     }
                 }
             } catch (error) {
-                console.error("Erro ao registrar click_id na API em background:", error);
+                console.error("Erro ao registrar click_id:", error);
             }
         }
 
         function initTracking() {
             if (isBot()) return;
-            
-            // Inicia o Pixel do Facebook e regista o PageView
             PIXELS_TO_TRACK.forEach(p => { fbq('init', p.id); });
             fbq('track', 'PageView');
 
-            // Aguarda a injeção dos cookies do FB para enviar dados completos à API
             let attempts = 0;
             const maxAttempts = 15;
             const interval = setInterval(() => {
@@ -324,39 +364,74 @@
             }, 200);
         }
 
-        // Atualiza a interface quando o usuário troca de pacote (Basic / Premium)
+        // Conversor automático do Mimo
+        function handleCustomInput(source) {
+            const usdInput = document.getElementById('input-usd');
+            const brlInput = document.getElementById('input-brl');
+            
+            if (source === 'usd') {
+                let val = parseFloat(usdInput.value);
+                if (isNaN(val) || val < 0) val = 0;
+                customPriceUSD = val;
+                
+                // Atualiza o BRL formatando para 2 casas decimais
+                brlInput.value = val === 0 ? '' : (val * PIX_RATE).toFixed(2);
+            } else {
+                let val = parseFloat(brlInput.value);
+                if (isNaN(val) || val < 0) val = 0;
+                customPriceUSD = val / PIX_RATE;
+                
+                // Atualiza o USD formatando para 2 casas decimais
+                usdInput.value = val === 0 ? '' : (val / PIX_RATE).toFixed(2);
+            }
+            
+            updateCTAButton();
+        }
+
+        // Atualiza a interface (Pacotes)
         function updateSelection() {
-            const basicRadio = document.querySelector('input[value="basic"]');
-            const premiumRadio = document.querySelector('input[value="premium"]');
-            
-            currentPkg = basicRadio.checked ? 'basic' : 'premium';
+            const selectedRadio = document.querySelector('input[name="package"]:checked');
+            currentPkg = selectedRadio ? selectedRadio.value : 'premium';
 
-            // Reset Styles
-            document.getElementById('card-basic').className = "relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-border bg-white pr-6";
-            document.getElementById('card-premium').className = "relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-border bg-white pr-6";
-            
-            document.getElementById('check-basic').className = "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-of-border flex items-center justify-center transition-all";
-            document.getElementById('icon-basic').classList.replace('opacity-100', 'opacity-0');
-            
-            document.getElementById('check-premium').className = "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-of-border flex items-center justify-center transition-all";
-            document.getElementById('icon-premium').classList.replace('opacity-100', 'opacity-0');
+            PACKAGES.forEach(pkg => {
+                const card = document.getElementById(`card-${pkg}`);
+                const check = document.getElementById(`check-${pkg}`);
+                const icon = document.getElementById(`icon-${pkg}`);
+                const isCustom = pkg === 'custom';
 
-            // Apply Active Styles
-            const activeCard = document.getElementById(`card-${currentPkg}`);
-            const activeCheck = document.getElementById(`check-${currentPkg}`);
-            const activeIcon = document.getElementById(`icon-${currentPkg}`);
+                // Estado Desmarcado
+                card.className = "relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 border-of-border bg-white" + (isCustom ? " flex-col" : " pr-6");
+                check.className = "absolute border-2 border-of-border flex items-center justify-center transition-all " + (isCustom ? "right-4 top-4 w-5 h-5 rounded-full" : "right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full");
+                icon.classList.replace('opacity-100', 'opacity-0');
+                
+                if (isCustom) document.getElementById('custom-inputs').classList.add('hidden');
 
-            activeCard.classList.replace('border-of-border', 'border-of-blue');
-            activeCard.classList.replace('bg-white', 'bg-blue-50/50');
-            
-            activeCheck.classList.replace('border-of-border', 'border-of-blue');
-            activeCheck.classList.add('bg-of-blue');
-            activeIcon.classList.replace('opacity-0', 'opacity-100');
+                // Estado Marcado
+                if (currentPkg === pkg) {
+                    card.classList.replace('border-of-border', 'border-of-blue');
+                    card.classList.replace('bg-white', 'bg-blue-50/50');
+                    check.classList.replace('border-of-border', 'border-of-blue');
+                    check.classList.add('bg-of-blue');
+                    icon.classList.replace('opacity-0', 'opacity-100');
+                    
+                    if (isCustom) {
+                        document.getElementById('custom-inputs').classList.remove('hidden');
+                        document.getElementById('custom-inputs').classList.add('flex');
+                        
+                        // Inicializa os campos se estiverem vazios
+                        const usdInput = document.getElementById('input-usd');
+                        if (!usdInput.value) {
+                            usdInput.value = customPriceUSD;
+                            handleCustomInput('usd');
+                        }
+                    }
+                }
+            });
 
             updateCTAButton();
         }
 
-        // Atualiza a interface quando o usuário troca a forma de pagamento (Card / PIX)
+        // Atualiza a interface (Pagamento)
         function setPayment(method) {
             currentPay = method;
             const btnCard = document.getElementById('btn-card');
@@ -386,11 +461,21 @@
 
         // Atualiza o texto do botão fixo no rodapé
         function updateCTAButton() {
-            const usdPrice = PRICES[currentPkg];
+            const usdPrice = currentPkg === 'custom' ? customPriceUSD : PRICES[currentPkg];
             const ctaBtn = document.getElementById('cta-text');
             
+            if (usdPrice <= 0) {
+                ctaBtn.innerHTML = `Insira um valor`;
+                return;
+            }
+
             if (currentPay === 'card') {
-                ctaBtn.innerHTML = `Assinar por $${usdPrice}`;
+                // Se for Mimo no cartão, exibe apenas a ação genérica, pois Stripe lidará com valor lá
+                if (currentPkg === 'custom') {
+                    ctaBtn.innerHTML = `Ir para o Checkout`;
+                } else {
+                    ctaBtn.innerHTML = `Assinar por $${usdPrice}`;
+                }
             } else {
                 const brlPrice = usdPrice * PIX_RATE;
                 ctaBtn.innerHTML = `Pagar R$ ${brlPrice.toFixed(2).replace('.', ',')} no PIX`;
@@ -400,9 +485,8 @@
             }
         }
 
-        // Função utilitária para usar MOCK (Falso) se a API real der erro de CORS/Conexão
         function applyMockData() {
-            console.log("⚠️ ATENÇÃO: Falha na API. Entrando em Modo MOCK (Simulação) para fins de teste da UI.");
+            console.log("⚠️ ATENÇÃO: Falha na API. Entrando em Modo MOCK.");
             const mockQrText = "00020126580014br.gov.bcb.pix0136sua-chave-pix-aqui-1234567895204000053039865405174.005802BR5915NOME DO RECEBEDOR6009SAO PAULO62140510DUMMYCODE16304ABCD";
             
             document.getElementById('pix-code').value = mockQrText;
@@ -410,13 +494,19 @@
             currentTransactionId = "mock_" + Date.now();
             
             openPixModal();
-            startPixPolling(true); // Passa 'true' para indicar que é simulação
+            startPixPolling(true);
         }
 
-        // Ação principal de Checkout
         async function processCheckout() {
+            const usdPrice = currentPkg === 'custom' ? customPriceUSD : PRICES[currentPkg];
+            
+            if (usdPrice <= 0) {
+                alert("Por favor, insira um valor válido para prosseguir.");
+                return;
+            }
+
             if (currentPay === 'card') {
-                // Redireciona para o Stripe
+                // Redireciona para o Stripe correspondente
                 window.location.href = STRIPE_LINKS[currentPkg];
             } else {
                 const btnSpan = document.getElementById('cta-text');
@@ -424,20 +514,15 @@
                 const originalText = btnSpan.innerHTML;
                 
                 try {
-                    // Feedback visual de carregamento
                     btnSpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando PIX...';
                     btnEl.disabled = true;
 
-                    // 1. Calcula o valor em centavos
-                    const usdPrice = PRICES[currentPkg];
                     const brlPrice = usdPrice * PIX_RATE;
                     const valueCents = Math.round(brlPrice * 100);
                     
-                    // 2. Coleta o click_id (Usa o verdadeiro gerado pela API, ou falha segura)
                     const urlParams = new URLSearchParams(window.location.search);
                     const clickId = globalClickId || urlParams.get('click_id') || "chk_" + Date.now();
 
-                    // 3. Chama a API da HotTrack para gerar o PIX com o click_id da página
                     let response;
                     try {
                         response = await fetch('https://novaapi-one.vercel.app/api/pix/generate', {
@@ -452,38 +537,29 @@
                             })
                         });
                     } catch (networkError) {
-                        // Erro de rede (CORS, servidor offline, etc)
-                        console.error('Erro de Rede/CORS detectado:', networkError);
                         applyMockData();
                         return;
                     }
 
-                    // Se o servidor respondeu, mas com erro (ex: 401, 403, 500)
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Falha na resposta da API (Status ' + response.status + '):', errorText);
                         applyMockData();
                         return;
                     }
                     
-                    // Sucesso na API
                     const data = await response.json();
 
                     if (data && data.qr_code_text && data.transaction_id) {
-                        // Atualiza o modal com o QR Code e código copia/cola reais da API
                         document.getElementById('pix-code').value = data.qr_code_text;
                         document.getElementById('pix-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.qr_code_text)}`;
                         currentTransactionId = data.transaction_id;
                         
                         openPixModal();
-                        startPixPolling(false); // Inicia a verificação de pagamento real
+                        startPixPolling(false);
                     } else {
-                        console.error("Resposta inesperada da API:", data);
                         applyMockData();
                     }
 
                 } catch (error) {
-                    console.error('Erro fatal na integração:', error);
                     applyMockData();
                 } finally {
                     btnSpan.innerHTML = originalText;
@@ -492,45 +568,34 @@
             }
         }
 
-        // Função para consultar o status do pagamento repetidamente
         function startPixPolling(isMock = false) {
             if (pixPollingInterval) clearInterval(pixPollingInterval);
             
-            // Se for simulação, aprova automaticamente após 8 segundos para demonstrar a tela de sucesso
             if (isMock) {
-                pixPollingInterval = setTimeout(() => {
-                    showSuccessScreen();
-                }, 8000);
+                pixPollingInterval = setTimeout(() => { showSuccessScreen(); }, 8000);
                 return;
             }
 
-            // Consulta Real na API a cada 5 segundos
             pixPollingInterval = setInterval(async () => {
                 if (!currentTransactionId || currentTransactionId.startsWith('mock_')) return;
                 
                 try {
                     const response = await fetch(`https://novaapi-one.vercel.app/api/pix/status/${currentTransactionId}`, {
                         method: 'GET',
-                        headers: {
-                            'x-api-key': HOTTRACK_API_KEY
-                        }
+                        headers: { 'x-api-key': HOTTRACK_API_KEY }
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
                         if (data.status === 'paid') {
-                            clearInterval(pixPollingInterval); // Para de consultar
-                            showSuccessScreen(); // Exibe sucesso!
+                            clearInterval(pixPollingInterval);
+                            showSuccessScreen();
                         }
                     }
-                } catch (error) {
-                    // Evita poluir o console excessivamente durante o polling se houver erro temporário
-                    console.debug("Erro ao checar status do PIX", error);
-                }
+                } catch (error) {}
             }, 5000);
         }
 
-        // Transforma o conteúdo do Modal em uma tela de "Pagamento Aprovado"
         function showSuccessScreen() {
             const modalContent = document.getElementById('pix-modal-content');
             modalContent.innerHTML = `
@@ -547,39 +612,30 @@
             `;
         }
 
-        // Controle do Modal do PIX (Bottom Sheet UX)
         function openPixModal() {
             const modal = document.getElementById('pix-modal');
             const overlay = document.getElementById('pix-modal-overlay');
-            
             overlay.classList.remove('hidden');
             modal.classList.remove('hidden');
-            
-            // Pequeno delay para a transição de opacidade/animação funcionar
             setTimeout(() => {
                 overlay.classList.replace('opacity-0', 'opacity-100');
                 modal.classList.add('slide-up');
             }, 10);
-            
-            // Impede a rolagem do fundo no mobile
             document.body.style.overflow = 'hidden';
         }
 
         function closePixModal() {
-            if (pixPollingInterval) clearInterval(pixPollingInterval); // Para de verificar se o usuário fechar a tela
-
+            if (pixPollingInterval) clearInterval(pixPollingInterval);
             const modal = document.getElementById('pix-modal');
             const overlay = document.getElementById('pix-modal-overlay');
-            
             overlay.classList.replace('opacity-100', 'opacity-0');
-            modal.style.transform = 'translateY(100%)'; // Desliza pra baixo manualmente
-            
+            modal.style.transform = 'translateY(100%)';
             setTimeout(() => {
                 overlay.classList.add('hidden');
                 modal.classList.remove('slide-up');
                 modal.classList.add('hidden');
-                modal.style.transform = ''; // Reseta o transform
-                document.body.style.overflow = ''; // Volta a rolagem do fundo
+                modal.style.transform = '';
+                document.body.style.overflow = '';
             }, 300);
         }
 
@@ -594,7 +650,6 @@
             });
         }
 
-        // Inicializa o Tracking em Background e Botões da UI
         initTracking();
         updateSelection();
     </script>
